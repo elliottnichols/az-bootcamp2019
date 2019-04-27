@@ -2,11 +2,19 @@
 
 ## Download and Deploy Istio
 ```
-$ cd 3-Istio
+$ cd ../3-Istio
 $ curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.1.4 sh -
+
+$ kubectl create namespace istio-system
 $ kubectl apply -f istio-system.yaml
 
-$ helm install istio-1.1.4/install/kubernetes/helm/istio --name istio --namespace istio-system \
+
+$ helm template istio-1.1.4/install/kubernetes/helm/istio-init --name istio-init --namespace istio-system | kubectl apply -f -
+$ kubectl get customresourcedefinitions | grep 'istio.io\|certmanager.k8s.io' | wc -l
+# Should output 53 lines
+
+$ helm install istio-1.1.4/install/kubernetes/helm/istio --name istio \
+    --namespace istio-system \
     --values istio-1.1.4/install/kubernetes/helm/istio/values-istio-demo.yaml
 
 # Verify Services look similiar
@@ -68,27 +76,54 @@ Example book review app deployment for exploring and testing Iseio features.
 ![Bookinfo arch](https://istio.io/docs/examples/bookinfo/withistio.svg)
 
 
-```
+```bash
 # Review bookinfo standard deployment configuration. Basic Services and Deployments for eachmicro-service.
 $ cat istio-1.1.4/samples/bookinfo/platform/kube/bookinfo.yaml
-# Run bookinfo.yaml to inject 
+
+# Create bookinfo Namespace
+$ kubectl create namespace bookinfo
 
 # Enable automatic sidecar injection namespace bookinfo 
 $ kubectl label namespace bookinfo istio-injection=enabled
 $ kubectl apply -f istio-1.1.4/samples/bookinfo/platform/kube/bookinfo.yaml -n bookinfo
-$ kubectl get all -n bookinfo -w   # until objecs are availabe, ready, or running 
+$ kubectl get all -n bookinfo   # until objecs are availabe, ready, or running 
 
 # Curl ratings service
-$ kubectl exec -it $(kubectl get pod -l app=ratings -o jsonpath='{.items[0].metadata.name}') -c ratings -- curl productpage:9080/productpage | grep -o "<title>.*</title>"
+$ kubectl exec -n bookinfo -it $(kubectl get pod -n bookinfo -l app=ratings -o jsonpath='{.items[0].metadata.name}') -c ratings -- curl productpage:9080/productpage | grep -o "<title>.*</title>"
 
 # Setup Gateway
 $ kubectl apply -f istio-1.1.4/samples/bookinfo/networking/bookinfo-gateway.yaml -n bookinfo
 $ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 $ export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
-$ export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
+# $ export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
 $ export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
 
-## Bug: https://github.com/Azure/AKS/issues/643
-# Can't configure AKS use use Standard LB
-# Associate LB Backend Pool to Virtual Machine Scale Set
+$ echo $GATEWAY_URL
 ```
+
+ - Pop open browser and head t: http://$GATEWAY_URL/productpage
+ - Refresh several times and observe the Book Reviews section changing. (dynamic routing to different versions of the app)
+- Head back over to the Grafana and Kiali UIs and observe
+
+## Let's control routing
+```bash
+$ kubectl apply -f istio-1.1.4/samples/bookinfo/networking/destination-rule-all.yaml -n bookinfo
+
+# Add virtual service for all v1. Review yaml
+$ kubectl apply -f istio-1.1.4/samples/bookinfo/networking/virtual-service-all-v1.yaml -n bookinfo
+
+# What happened? All reviews to v1 service
+
+# Let's add a v2 test service. Review yaml
+$ kubectl apply -f istio-1.1.4/samples/bookinfo/networking/virtual-service-reviews-test-v2.yaml -n bookinfo
+
+# Anything change???
+# Now click `Sign In` and use `Jason` as the Username. password can be blank
+# Hmmm. What happened? dynamic routing based on header match.
+# try out a few more virtual-service router options and observe traffic.
+```
+There are many other samples and examples in these directories. Use any remaining time to explore different configurations. 
+
+Many more details on Istio Traffic Management can be found here: https://istio.io/docs/concepts/traffic-management/#destination-rules
+
+This is just the tip of the iceberg working with Istio. Keep exploring.

@@ -1,9 +1,11 @@
 # Prometheus
-By installing kube-prometheus you got 1 Prometheus server (a prometheus resource) and a set of service monitor resources that allow you to monitor your cluster itself. Installing kube-prometheus also gave you a Grafana instance that is connected to the prometheus server and has a set of dashboards pre-configured.
+By installing kube-prometheus you'll get 1 Prometheus server  and a set of service monitor resources that allow you to monitor THE cluster itself. Installing kube-prometheus also gives you a Grafana instance that is connected to the prometheus server and has a set of dashboards pre-configured.
 
-```
+```bash
+$ cd ../2-Prometheus-and-Grafana
 $ kubectl create namespace monitoring
-$ 
+
+# Add Prometheus operator and server components
 $ helm install coreos/prometheus-operator --name prometheus-operator --namespace monitoring
 $ helm install coreos/kube-prometheus --name kube-prometheus --namespace monitoring
 
@@ -38,7 +40,7 @@ $ kubectl --namespace monitoring port-forward $(kubectl get pod --namespace moni
 Browse to http://localhost:9090
 
 
-# Browse and Explore Grafana
+## Browse and Explore Grafana
 
 - Configure port-forward to Grafana UI
 ```

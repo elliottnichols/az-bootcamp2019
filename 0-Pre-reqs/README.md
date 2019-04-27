@@ -5,6 +5,7 @@ Let's prepare for this lab by installing and configuring all the necessary tools
  - Azure CLI
  - Kubernetes Command Line Tool, kubectl
  - Helm
+ - Istio CTL
 
 ### Azure CLI
 Azure Command Line Interface to manage Azure resources.
@@ -66,6 +67,7 @@ $ istioctl version
 ```
 
 ## Azure CLI Login
+*not required if using shared AKS cluster
 ```shell
 $ az login
 $ az account list
