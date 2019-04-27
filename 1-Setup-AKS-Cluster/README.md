@@ -41,27 +41,9 @@ $ helm repo update
 ## (Option 2) Personal AKS Cluster
 Setup your own AKS cluster in your own Subscription. This requires elevated contributor permissions in the Azure Subscription as well as permissions to create Service Principals on the Azure AD Tenant. 
 
-Registering the required Azure features for this lab may take ~30 minutes or more.
-
 ```bash
-$ CLUSTER_NAME=<NAME_YOUR_CLUSTER>
+$ export CLUSTER_NAME=<NAME_YOUR_CLUSTER>
 $ az group create -n $CLUSTER_NAME -l eastus2
-
-# add or update AKS CLI extension
-$ az extension add --name aks-preview
-$ az extension update --name aks-preview  # Update if it's already installed
-
-# Azure feature registration can take a while
-$ az feature register --name VMSSPreview --namespace Microsoft.ContainerService
-$ az feature register --name AvailabilityZonePreview --namespace Microsoft.ContainerService
-$ az feature register --name MultiAgentpoolPreview --namespace Microsoft.ContainerService
-
-$ # Watch and Wait
-$ az feature list --namespace Microsoft.ContainerService | grep 'VMSSPreview\|AvailabilityZonePreview\|MultiAgentpoolPreview'   # Watch until all features are registered
-
-# Continue once registrations are complete
-# Will Propogate new features after all new features are registerd
-$ az provider register -n Microsoft.ContainerService
 
 # Create AKS Cluster
 $ az group create -n $CLUSTER_NAME -l eastus2
@@ -72,18 +54,16 @@ $ az aks create \
     --node-count 2 \
     --nodepool-name pool1 \
     --node-vm-size Standard_F2s \
-    --enable-addons monitoring \
     --admin-username azureuser \
     --kubernetes-version 1.13.5 \
     --ssh-key-value ~/.ssh/id_rsa.pub
 
-    --enable-vmss \
-
-# Experimental Flags
-    --node-zones 1 2 3 \
-    --enable-cluster-autoscaler \
-    --min-count 2 \
-    --max-count 5 \
+# Experimental Flags: Won't work for this lab
+    # --enable-vmss \
+    # --node-zones 1 2 3 \
+    # --enable-cluster-autoscaler \
+    # --min-count 2 \
+    # --max-count 5 \
 
 # Get AKS credentials from AKS cluster
 $ az aks get-credentials -n $CLUSTER_NAME -g $CLUSTER_NAME -f ~/.kube/config_$CLUSTER_NAME --admin
